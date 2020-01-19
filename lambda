@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/bash
 
 function realpath() {
     [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
@@ -15,15 +15,18 @@ OPTIND=1
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 
 # Infer the host architecture.
-ARCH=`uname -m`
+ARCH=$(uname -m)
 
 # Parse the arguments.
 OUTPUT=""
-while getopts "h?o:" opt; do
+while getopts "h?go:" opt; do
     case "$opt" in
     h|\?)
         show_help
         exit 0
+        ;;
+    g)
+        FLAGS="-g"
         ;;
     o)  OUTPUT=$OPTARG
         ;;
@@ -35,24 +38,45 @@ shift $((OPTIND-1))
 [ "${1:-}" = "--" ] && shift
 
 # Find the input file.
-INPUT=`realpath $1`
+INPUT=$(realpath "$1")
 if test -f "$INPUT"; then
   # Compile the file.
   case "$OUTPUT" in
     "")
       # Dump assembly to stdout.
-      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT)
+        if ! (
+                cd "$DIR" || exit 1
+                dune exec ./main.exe -- $FLAGS -"$ARCH" "$INPUT"
+            ); then
+            echo "Failed to compile."
+            exit 1
+        fi
       ;;
     *)
       # Create a temporary directory.
-      WORK_DIR=`mktemp -d`
+      WORK_DIR=$(mktemp -d)
 
-      (cd $DIR; dune exec ./main.exe -- -$ARCH $INPUT -o $WORK_DIR/lambda.S)
-      gcc -c runtime_x86_64.S -o $WORK_DIR/runtime.o
-      gcc $WORK_DIR/lambda.S $WORK_DIR/runtime.o -o $OUTPUT
+      # Compile and link.
+      if ! (
+              if ! (
+                      cd "$DIR" || exit 1
+                      dune exec ./main.exe -- $FLAGS -"$ARCH" "$INPUT" -o "$WORK_DIR/lambda.S"
+                  ); then
+                  echo "Failed to compile."
+                  exit 1
+              fi
 
-      # Link with runtime into a binary.
-      trap cleanup EXIT
+              gcc -c runtime_x86_64.S -o "$WORK_DIR/runtime.o"
+              gcc $FLAGS "$WORK_DIR/lambda.S" "$WORK_DIR/runtime.o" -o "$OUTPUT"
+          ); then
+          echo "Failed to build."
+          exit 1
+      fi
+
+      # Cleanup temp directory.
+      if test -z $FLAGS; then
+          trap cleanup EXIT
+      fi
       ;;
   esac
 else
