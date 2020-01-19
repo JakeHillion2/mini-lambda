@@ -13,12 +13,31 @@ func sub(x, y) {
   return x - y;
 }
 
+func equ(x, y) {
+  return x == y;
+}
+
+func nequ(x, y) {
+  return x != y;
+}
+
 func main() {
 	x <- input_int();
 	y <- input_int();
+
 	f <- adder(x);
 	s <- f(y);
   d <- sub(x, y);
+  e <- equ(x, y);
+
 	print_int(s);
   print_int(d);
+  print_int(e);
+  print_int(nequ(x, y));
+
+  print_int(true && true);
+  print_int(true && false);
+
+  print_int(false || true);
+  print_int(false || false);
 }

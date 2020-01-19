@@ -63,8 +63,6 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
       Printf.fprintf out "\tpop {r2}\n";
       Printf.fprintf out "\tadd r1, r1, r2\n";
       Printf.fprintf out "\tpush {r1}\n";
-    | Minus ->
-      failwith "Minus not implemented on ARMv7"
     | Call ->
       Printf.fprintf out "\tpop {r0}\n";
       Printf.fprintf out "\tldr r1, [r0]\n";
@@ -80,6 +78,18 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
       Printf.fprintf out "\tmov pc, lr\n"
     | Pop ->
       Printf.fprintf out "\tpop {r1}\n"
+    | Minus ->
+      failwith "Minus not implemented on ARMv7"
+    | ConstBool _ ->
+      failwith "ConstBool not implemented on ARMv7"
+    | Equals ->
+      failwith "Equals not implemented on ARMv7"
+    | NotEquals ->
+      failwith "NotEquals not implemented on ARMv7"
+    | LogicalOr ->
+      failwith "LogicalOr not implemented on ARMv7"
+    | LogicalAnd ->
+      failwith "LogicalAnd not implemented on ARMv7"
     ) insts;
 
   Printf.fprintf out "\t.data\n";

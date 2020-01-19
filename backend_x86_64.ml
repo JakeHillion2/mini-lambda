@@ -46,6 +46,9 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
     | ConstInt i ->
       Printf.fprintf out "\tmovq $%d, %%rcx\n" i;
       Printf.fprintf out "\tpushq %%rcx\n"
+    | ConstBool b ->
+      Printf.fprintf out "\tmovq $%d, %%rcx\n" b;
+      Printf.fprintf out "\tpushq %%rcx\n"
     | Closure(i, num_capture) ->
       let size = num_capture * 8 + 8 in
       Printf.fprintf out "\tmovq $%d, %%rcx\n" num_capture;
@@ -63,6 +66,24 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
     | Minus ->
       Printf.fprintf out "\tpopq %%rcx\n";
       Printf.fprintf out "\tsubq %%rcx, (%%rsp)\n"
+    | Equals ->
+      Printf.fprintf out "\tpopq %%rcx\n";
+      Printf.fprintf out "\txor %%rdx, %%rdx\n";
+      Printf.fprintf out "\tcmp %%rcx, (%%rsp)\n";
+      Printf.fprintf out "\tsete %%dl\n";
+      Printf.fprintf out "\tmov %%rdx, (%%rsp)\n"
+    | NotEquals ->
+      Printf.fprintf out "\tpopq %%rcx\n";
+      Printf.fprintf out "\txor %%rdx, %%rdx\n";
+      Printf.fprintf out "\tcmp %%rcx, (%%rsp)\n";
+      Printf.fprintf out "\tsetne %%dl\n";
+      Printf.fprintf out "\tmov %%rdx, (%%rsp)\n"
+    | LogicalOr ->
+      Printf.fprintf out "\tpopq %%rcx\n";
+      Printf.fprintf out "\tor %%rcx, (%%rsp)\n"
+    | LogicalAnd ->
+      Printf.fprintf out "\tpopq %%rcx\n";
+      Printf.fprintf out "\tand %%rcx, (%%rsp)\n"
     | Call ->
       Printf.fprintf out "\tpopq %%rax\n";
       Printf.fprintf out "\tcallq *(%%rax)\n";
@@ -77,9 +98,9 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
       if num_params > 0 then
         Printf.fprintf out "\taddq $%d, %%rsp\n" (8 * num_params);
       Printf.fprintf out "\tpushq %%rdx\n";
-      Printf.fprintf out "\tretq\n";
+      Printf.fprintf out "\tretq\n"
     | Pop ->
-      Printf.fprintf out "\tpopq %%rcx\n";
+      Printf.fprintf out "\tpopq %%rcx\n"
     ) insts;
 
   Printf.fprintf out "\t.data\n";
