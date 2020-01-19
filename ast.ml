@@ -12,6 +12,7 @@ type expr
   = IdentExpr of loc * string
   | IntExpr of loc * int
   | AddExpr of loc * expr * expr
+  | MinusExpr of loc * expr * expr
   | LambdaExpr of loc * string list * expr
   | CallExpr of loc * expr * expr list
 

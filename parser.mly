@@ -11,6 +11,7 @@ open Ast
 %token <int> INT
 %token <string> IDENT
 %token PLUS
+%token MINUS
 %token LPAREN RPAREN LBRACE RBRACE
 %token FUNC
 %token RETURN
@@ -53,6 +54,8 @@ expr:
   | unary_expr { $1 }
   | lhs = expr; PLUS; rhs = unary_expr
     { AddExpr($startpos, lhs, rhs) }
+  | lhs = expr; MINUS; rhs = unary_expr
+    { MinusExpr($startpos, lhs, rhs) }
 
 unary_expr:
   | LAMBDA

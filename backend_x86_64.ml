@@ -60,6 +60,9 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
     | Add ->
       Printf.fprintf out "\tpopq %%rcx\n";
       Printf.fprintf out "\taddq %%rcx, (%%rsp)\n"
+    | Minus ->
+      Printf.fprintf out "\tpopq %%rcx\n";
+      Printf.fprintf out "\tsubq %%rcx, (%%rsp)\n"
     | Call ->
       Printf.fprintf out "\tpopq %%rax\n";
       Printf.fprintf out "\tcallq *(%%rax)\n";
