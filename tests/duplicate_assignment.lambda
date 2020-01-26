@@ -1,0 +1,8 @@
+func print_int(x);
+
+func main() {
+  x <- 4;
+  print_int(x);
+  x <- 5;
+  print_int(x);
+}
