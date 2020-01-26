@@ -31,6 +31,14 @@ type inst
   | ConstBool of int
   (* Pops a number of values and pushes a closure capturing them. *)
   | Closure of int * int
+  (* A label *)
+  | Label of int
+  (* Jumps to a label *)
+  | Jump of int
+  (* Jumps to a label if true *)
+  | CondJump of int
+  (* Jumps to a label if false *)
+  | InvCondJump of int
   (* Pops two values and pushes their sum. *)
   | Add
   (* Pops two values and pushes their difference. *)
@@ -72,6 +80,10 @@ let print_inst out inst =
   | ConstInt i    -> Printf.fprintf out "\tConstInt(%d)\n" i
   | ConstBool i   -> Printf.fprintf out "\tConstBool(%d)\n" i
   | Closure(i, n) -> Printf.fprintf out "\tClosure(%d, %d)\n" i n
+  | Label i       -> Printf.fprintf out "Label(%d)\n" i
+  | Jump i        -> Printf.fprintf out "\tJump(%d)\n" i
+  | CondJump i    -> Printf.fprintf out "\tCondJump(%d)\n" i
+  | InvCondJump i -> Printf.fprintf out "\tInvCondJump(%d)\n" i
   | Add           -> Printf.fprintf out "\tAdd\n"
   | Minus         -> Printf.fprintf out "\tMinus\n"
   | Equals        -> Printf.fprintf out "\tEquals\n"

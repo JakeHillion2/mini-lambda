@@ -90,6 +90,14 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
       failwith "LogicalOr not implemented on ARMv7"
     | LogicalAnd ->
       failwith "LogicalAnd not implemented on ARMv7"
+    | Label _ ->
+      failwith "Label not implemented on ARMv7"
+    | Jump _ ->
+      failwith "Jump not implemented on ARMv7"
+    | CondJump _ ->
+      failwith "CondJump not implemented on ARMv7"
+    | InvCondJump _ ->
+      failwith "InvCondJump not implemented on ARMv7"
     ) insts;
 
   Printf.fprintf out "\t.data\n";

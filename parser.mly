@@ -22,6 +22,8 @@ open Ast
 %token RETURN
 %token ARROW
 %token LAMBDA
+%token IF
+%token ELSE
 %token BIND
 %token COMMA
 %token SEMI
@@ -54,6 +56,12 @@ statement:
   | RETURN expr SEMI { ReturnStmt($startpos, $2) }
   | IDENT BIND expr SEMI { BindStmt($startpos, $1, $3) }
   | expr SEMI { ExprStmt($startpos, $1) }
+  | if_statement { $1 }
+
+if_statement:
+  | IF expr LBRACE statements RBRACE { IfStmt($startpos, $2, $4, []) }
+  | IF expr LBRACE statements RBRACE ELSE LBRACE statements RBRACE { IfStmt($startpos, $2, $4, $8) }
+  | IF expr LBRACE statements RBRACE ELSE if_statement { IfStmt($startpos, $2, $4, $7 :: []) }
 
 expr:
   | unary_expr { $1 }

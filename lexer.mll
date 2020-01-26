@@ -31,6 +31,8 @@ rule token = parse
   | "->" { ARROW }
   | "func" { FUNC }
   | "return" { RETURN }
+  | "if" { IF }
+  | "else" { ELSE }
   | "<-" { BIND }
   | "true" { BOOL (true) }
   | "false" { BOOL (false) }

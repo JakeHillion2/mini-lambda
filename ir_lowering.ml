@@ -6,6 +6,9 @@ let lower program =
   let next_id = ref 0 in
   let new_id () = let id = !next_id in next_id := id + 1; id in
 
+  let next_label = ref 0 in
+  let label_generator () = let out = !next_label in next_label := out+1; out in
+
   (* Map function IDs to functions. *)
   let funcs_by_id = Hashtbl.create 10 in
   Array.iter
@@ -83,6 +86,12 @@ let lower program =
           lower_body (Ir.Pop :: lower_expr acc e) rest
         | BindStmt(_, id, e) :: rest ->
           lower_body (Ir.SetLocal id :: lower_expr acc e) rest
+        | IfStmt(_, cond, branch1, branch2) :: rest ->
+          let branch2_id = label_generator() in
+          let end_id = label_generator() in
+          let branch1' = Ir.Jump(end_id) :: lower_body [] branch1 in
+          let branch2' = Ir.Label(end_id) :: lower_body [] branch2 @ Ir.Label(branch2_id) :: [] in
+          lower_body (branch2' @ branch1' @ (Ir.InvCondJump(branch2_id) :: lower_expr acc cond)) rest
         | [] ->
           acc
       in

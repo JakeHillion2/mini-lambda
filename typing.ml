@@ -248,7 +248,7 @@ let rec check_expr scope expr
     Typed_ast.CallExpr(loc, callee', Array.of_list (List.map fst args')), ret_ty
 
 (* Checks the type of a statement. *)
-let check_statements ret_ty acc scope stats
+let rec check_statements ret_ty acc scope stats
   = let rec iter (nb, acc) scope stats = match stats with
     | ReturnStmt(loc, e) :: rest ->
       let e', ty = check_expr scope e in
@@ -278,6 +278,14 @@ let check_statements ret_ty acc scope stats
       in unify loc ty bind_ty;
       let node = Typed_ast.BindStmt(loc, nb, e') in
       iter (next_nb, node :: acc) scope' rest
+    | IfStmt(loc, cond, branch1, branch2) :: rest ->
+      let cond', cond_ty = check_expr scope cond in
+      unify loc cond_ty TyBool;
+      let ret_ty = new_ty_var() in
+      let nb, branch1acc = check_statements ret_ty (nb, []) scope branch1 in
+      let nb, branch2acc = check_statements ret_ty (nb, []) scope branch2 in
+      let node = Typed_ast.IfStmt(loc, cond', branch1acc, branch2acc) in
+      iter (nb, node :: acc) scope rest
     | [] ->
       (nb, acc)
   in iter acc scope stats
@@ -309,7 +317,7 @@ let rec find_refs_expr bound acc expr
     List.fold_left (find_refs_expr bound) (find_refs_expr bound acc callee) args
 
 (* Finds the free variables in a function body. *)
-let find_refs_stat bound stats
+let rec find_refs_stat bound stats
   = let _, acc = List.fold_left
       (fun (bound, acc) stat ->
         match stat with
@@ -320,6 +328,8 @@ let find_refs_stat bound stats
         | BindStmt(_, name, e) ->
           (* The expression can refer to previous instances of 'name'. *)
           (name :: bound, find_refs_expr bound acc e)
+        | IfStmt(_, cond, branch1, branch2) ->
+            (bound, (find_refs_expr bound acc cond) @ (find_refs_stat bound branch1) @ (find_refs_stat bound branch2))
       ) (bound, []) stats
     in acc
 
