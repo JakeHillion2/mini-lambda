@@ -89,9 +89,17 @@ let lower program =
         | IfStmt(_, cond, branch1, branch2) :: rest ->
           let branch2_id = label_generator() in
           let end_id = label_generator() in
-          let branch1' = Ir.Jump(end_id) :: lower_body [] branch1 in
-          let branch2' = Ir.Label(end_id) :: lower_body [] branch2 @ Ir.Label(branch2_id) :: [] in
-          lower_body (branch2' @ branch1' @ (Ir.InvCondJump(branch2_id) :: lower_expr acc cond)) rest
+          let branch1' = Ir.Jump("main", end_id) :: lower_body [] branch1 in
+          let branch2' = Ir.Label("main", end_id) :: lower_body [] branch2 @ Ir.Label("main", branch2_id) :: [] in
+          lower_body (branch2' @ branch1' @ (Ir.InvCondJump("main", branch2_id) :: lower_expr acc cond)) rest
+        | ForStmt(_, init, cond, change, statements, (start_id, end_id)) :: rest ->
+          let block1 = Ir.InvCondJump("loop", end_id) :: (lower_expr [] cond) @ Ir.Label("loop", start_id) :: (lower_body acc init) in
+          let block2 = Ir.Label("loop", end_id) :: Ir.Jump("loop", start_id) :: (lower_body [] change) @ (lower_body [] statements) in
+          lower_body (block2 @ block1) rest
+        | ContinueStmt(_, label) :: rest ->
+          lower_body (Ir.Jump("loop", label) :: []) rest
+        | BreakStmt(_, label) :: rest ->
+          lower_body (Ir.Jump("loop", label) :: []) rest
         | [] ->
           acc
       in

@@ -31,6 +31,9 @@ type statement
   | ExprStmt of loc * expr
   | BindStmt of loc * id * expr
   | IfStmt of loc * expr * statement list * statement list
+  | ForStmt of loc * statement list * expr * statement list * statement list * (int * int)
+  | ContinueStmt of loc * int
+  | BreakStmt of loc * int
 
 type func =
   { id: id

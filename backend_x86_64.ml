@@ -60,18 +60,18 @@ let compile_closure out { id; num_params; num_locals; name; insts; _ } =
         Printf.fprintf out "\tmovq %%rdx, %d(%%rcx)\n" (size - (i + 1) * 8);
       done;
       Printf.fprintf out "\tpushq %%rcx\n"
-    | Label i ->
-      Printf.fprintf out "proglabel%d:\n" i
-    | Jump i ->
-      Printf.fprintf out "\tjmp proglabel%d\n" i
-    | CondJump i ->
+    | Label(id, i) ->
+      Printf.fprintf out "_lambda_c_%s_%d:\n" id i
+    | Jump(id, i) ->
+      Printf.fprintf out "\tjmp _lambda_c_%s_%d\n" id i
+    | CondJump(id, i) ->
       Printf.fprintf out "\tpopq %%rcx\n";
       Printf.fprintf out "\ttest %%rcx, %%rcx\n";
-      Printf.fprintf out "\tjne proglabel%d\n" i
-    | InvCondJump i ->
+      Printf.fprintf out "\tjne _lambda_c_%s_%d\n" id i
+    | InvCondJump(id, i) ->
       Printf.fprintf out "\tpopq %%rcx\n";
       Printf.fprintf out "\ttest %%rcx, %%rcx\n";
-      Printf.fprintf out "\tje proglabel%d\n" i
+      Printf.fprintf out "\tje _lambda_c_%s_%d\n" id i
     | Add ->
       Printf.fprintf out "\tpopq %%rcx\n";
       Printf.fprintf out "\taddq %%rcx, (%%rsp)\n"

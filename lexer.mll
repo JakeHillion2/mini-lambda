@@ -33,6 +33,11 @@ rule token = parse
   | "return" { RETURN }
   | "if" { IF }
   | "else" { ELSE }
+  | "for" { FOR }
+  | "while" { WHILE }
+  | "continue" { CONTINUE }
+  | "break" { BREAK }
+  | ":" { COLON }
   | "<-" { BIND }
   | "true" { BOOL (true) }
   | "false" { BOOL (false) }

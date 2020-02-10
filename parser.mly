@@ -24,9 +24,14 @@ open Ast
 %token LAMBDA
 %token IF
 %token ELSE
+%token FOR
+%token WHILE
+%token BREAK
+%token CONTINUE
 %token BIND
 %token COMMA
 %token SEMI
+%token COLON
 %token EOF
 
 %start program
@@ -57,6 +62,17 @@ statement:
   | IDENT BIND expr SEMI { BindStmt($startpos, $1, $3) }
   | expr SEMI { ExprStmt($startpos, $1) }
   | if_statement { $1 }
+  | loop { $1 }
+
+loop:
+  | FOR LPAREN init=statements; cond=expr SEMI change=statements RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, init, cond, change, body, None) }
+  | label=IDENT COLON FOR LPAREN init=statements; cond=expr SEMI change=statements RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, init, cond, change, body, Some(label)) }
+  | WHILE LPAREN cond=expr; RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, [], cond, [], body, None) }
+  | label=IDENT COLON WHILE LPAREN cond=expr; RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, [], cond, [], body, Some(label)) }
+  | CONTINUE SEMI { ContinueStmt($startpos, None) }
+  | CONTINUE label=IDENT SEMI { ContinueStmt($startpos, Some(label)) }
+  | BREAK SEMI { BreakStmt($startpos, None) }
+  | BREAK label=IDENT SEMI { BreakStmt($startpos, Some(label)) }
 
 if_statement:
   | IF expr LBRACE statements RBRACE { IfStmt($startpos, $2, $4, []) }

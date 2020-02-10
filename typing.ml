@@ -13,10 +13,14 @@
  *)
 
 open Ast
+open List
 
 exception Error of Ast.loc * string
 
 module IdentMap = Map.Make(String)
+
+let label_rf = ref 0
+let next_label_id () = let label = !label_rf in label_rf := label + 1; (label)
 
 (* Enumeration of types *)
 type ty
@@ -43,7 +47,21 @@ type type_scope
   | GroupScope of (int * ty) IdentMap.t
   | FuncScope of (int * ty) IdentMap.t * ty
   | BindScope of (int * ty) IdentMap.t
+  | LoopScope of (string option) * int * int
   | LambdaScope of (int * ty) IdentMap.t * (lambda_capture IdentMap.t) ref
+
+let rec get_loop_ids o_label scope
+  = match o_label with
+  | None -> begin match scope with
+      | LoopScope(_, start_id, end_id) :: _ -> (start_id, end_id)
+      | _ :: rest -> get_loop_ids o_label rest
+      | [] -> failwith "couldn't find loop"
+    end
+  | Some(target_label) -> begin match scope with
+      | LoopScope(Some(label), start_id, end_id) :: _ when label = target_label -> (start_id, end_id)
+      | _ :: rest -> get_loop_ids o_label rest
+      | [] -> failwith "couldn't find loop"
+    end
 
 (* Occurs check *)
 let rec occurs loc r ty
@@ -286,6 +304,25 @@ let rec check_statements ret_ty acc scope stats
       let nb, branch2acc = check_statements ret_ty (nb, []) scope branch2 in
       let node = Typed_ast.IfStmt(loc, cond', branch1acc, branch2acc) in
       iter (nb, node :: acc) scope rest
+    | ForStmt(loc, init, cond, change, statements, label) :: rest ->
+      let start_id = next_label_id() in
+      let end_id = next_label_id() in
+      let ret_ty = new_ty_var() in
+      let cond', cond_ty = check_expr scope cond in
+      unify loc cond_ty TyBool;
+      let nb, init' = check_statements ret_ty (nb, []) scope init in
+      let nb, change' = check_statements ret_ty (nb, []) scope change in
+      let nb, statements' = check_statements ret_ty (nb, []) scope statements in
+      let node = Typed_ast.ForStmt(loc, init', cond', change', statements', (start_id, end_id)) in
+      iter(nb, node :: acc) (LoopScope(label, start_id, end_id) :: scope) rest
+    | ContinueStmt(loc, label) :: rest ->
+      let (start_id, _) = get_loop_ids label scope in
+      let node = Typed_ast.ContinueStmt(loc, start_id) in
+      iter(nb, node :: acc) scope rest
+    | BreakStmt(loc, label) :: rest ->
+      let (_, end_id) = get_loop_ids label scope in
+      let node = Typed_ast.BreakStmt(loc, end_id) in
+      iter(nb, node :: acc) scope rest
     | [] ->
       (nb, acc)
   in iter acc scope stats
@@ -326,10 +363,15 @@ let rec find_refs_stat bound stats
         | ExprStmt(_, e) ->
           (bound, find_refs_expr bound acc e)
         | BindStmt(_, name, e) ->
-          (* The expression can refer to previous instances of 'name'. *)
-          (name :: bound, find_refs_expr bound acc e)
+          if List.mem name bound then
+            (bound, find_refs_expr bound acc e)
+          else (name :: bound, find_refs_expr bound acc e)
         | IfStmt(_, cond, branch1, branch2) ->
-            (bound, (find_refs_expr bound acc cond) @ (find_refs_stat bound branch1) @ (find_refs_stat bound branch2))
+          (bound, (find_refs_expr bound acc cond) @ (find_refs_stat bound branch1) @ (find_refs_stat bound branch2))
+        | ForStmt(_, init, cond, change, statements, _) ->
+          (bound, (find_refs_stat bound init) @ (find_refs_expr bound acc cond) @ (find_refs_stat bound change) @ (find_refs_stat bound statements))
+        | ContinueStmt(_, _) -> (bound, acc)
+        | BreakStmt(_, _) -> (bound, acc)
       ) (bound, []) stats
     in acc
 

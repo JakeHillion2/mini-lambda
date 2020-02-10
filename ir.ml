@@ -32,13 +32,13 @@ type inst
   (* Pops a number of values and pushes a closure capturing them. *)
   | Closure of int * int
   (* A label *)
-  | Label of int
+  | Label of string * int
   (* Jumps to a label *)
-  | Jump of int
+  | Jump of string * int
   (* Jumps to a label if true *)
-  | CondJump of int
+  | CondJump of string * int
   (* Jumps to a label if false *)
-  | InvCondJump of int
+  | InvCondJump of string * int
   (* Pops two values and pushes their sum. *)
   | Add
   (* Pops two values and pushes their difference. *)
@@ -80,10 +80,10 @@ let print_inst out inst =
   | ConstInt i    -> Printf.fprintf out "\tConstInt(%d)\n" i
   | ConstBool i   -> Printf.fprintf out "\tConstBool(%d)\n" i
   | Closure(i, n) -> Printf.fprintf out "\tClosure(%d, %d)\n" i n
-  | Label i       -> Printf.fprintf out "Label(%d)\n" i
-  | Jump i        -> Printf.fprintf out "\tJump(%d)\n" i
-  | CondJump i    -> Printf.fprintf out "\tCondJump(%d)\n" i
-  | InvCondJump i -> Printf.fprintf out "\tInvCondJump(%d)\n" i
+  | Label(id, i)    -> Printf.fprintf out "Label(%s,%d)\n" id i
+  | Jump(id, i)     -> Printf.fprintf out "\tJump(%s,%d)\n" id i
+  | CondJump(id, i)   -> Printf.fprintf out "\tCondJump(%s,%d)\n" id i
+  | InvCondJump(id,i) -> Printf.fprintf out "\tInvCondJump(%s,%d)\n" id i
   | Add           -> Printf.fprintf out "\tAdd\n"
   | Minus         -> Printf.fprintf out "\tMinus\n"
   | Equals        -> Printf.fprintf out "\tEquals\n"

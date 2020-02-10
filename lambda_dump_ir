@@ -1,0 +1,84 @@
+#!/usr/bin/bash
+
+function realpath() {
+    [[ $1 = /* ]] && echo "$1" || echo "$PWD/${1#./}"
+}
+
+function cleanup() {
+  rm -rf "$WORK_DIR"
+}
+
+# A POSIX variable
+OPTIND=1
+
+# Find the directory where the script is located.
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+# Infer the host architecture.
+ARCH=$(uname -m)
+
+# Parse the arguments.
+OUTPUT=""
+while getopts "h?go:" opt; do
+    case "$opt" in
+    h|\?)
+        show_help
+        exit 0
+        ;;
+    g)
+        FLAGS="-g"
+        ;;
+    o)  OUTPUT=$OPTARG
+        ;;
+    esac
+done
+
+shift $((OPTIND-1))
+
+[ "${1:-}" = "--" ] && shift
+
+# Find the input file.
+INPUT=$(realpath "$1")
+if test -f "$INPUT"; then
+  # Compile the file.
+  case "$OUTPUT" in
+    "")
+      # Dump assembly to stdout.
+        if ! (
+                cd "$DIR" || exit 1
+                dune exec ./main.exe -- $FLAGS -"armv7" "$INPUT"
+            ); then
+            echo "Failed to compile."
+            exit 1
+        fi
+      ;;
+    *)
+      # Create a temporary directory.
+      WORK_DIR=$(mktemp -d)
+
+      # Compile and link.
+      if ! (
+              if ! (
+                      cd "$DIR" || exit 1
+                      dune exec ./main.exe -- $FLAGS -"$ARCH" "$INPUT" -o "$WORK_DIR/lambda.S"
+                  ); then
+                  echo "Failed to compile."
+                  exit 1
+              fi
+
+              gcc -c runtime_x86_64.S -o "$WORK_DIR/runtime.o"
+              gcc $FLAGS "$WORK_DIR/lambda.S" "$WORK_DIR/runtime.o" -o "$OUTPUT"
+          ); then
+          echo "Failed to build."
+          exit 1
+      fi
+
+      # Cleanup temp directory.
+      if test -z $FLAGS; then
+          trap cleanup EXIT
+      fi
+      ;;
+  esac
+else
+  echo "File does not exist: $INPUT"
+fi
