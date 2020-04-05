@@ -1,9 +1,0 @@
-func print_int(x);
-
-func main() {
-  if 1==2 {
-    print_int(4);
-  } else {
-    print_int(5);
-  }
-}

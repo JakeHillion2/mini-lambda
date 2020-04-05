@@ -300,11 +300,11 @@ let rec check_statements ret_ty acc scope stats
       let cond', cond_ty = check_expr scope cond in
       unify loc cond_ty TyBool;
       let ret_ty = new_ty_var() in
-      let nb, branch1acc = check_statements ret_ty (nb, []) scope branch1 in
-      let nb, branch2acc = check_statements ret_ty (nb, []) scope branch2 in
+      let nb, branch1acc = check_statements ret_ty (nb, []) scope (Option.value branch1 ~default:[]) in
+      let nb, branch2acc = check_statements ret_ty (nb, []) scope (Option.value branch2 ~default:[]) in
       let node = Typed_ast.IfStmt(loc, cond', branch1acc, branch2acc) in
       iter (nb, node :: acc) scope rest
-    | ForStmt(loc, init, cond, change, statements, label) :: rest ->
+    | ForStmt(loc, init, cond, change, body, label) :: rest ->
       let start_id = next_label_id() in
       let end_id = next_label_id() in
       let ret_ty = new_ty_var() in
@@ -312,8 +312,8 @@ let rec check_statements ret_ty acc scope stats
       unify loc cond_ty TyBool;
       let nb, init' = check_statements ret_ty (nb, []) scope init in
       let nb, change' = check_statements ret_ty (nb, []) scope change in
-      let nb, statements' = check_statements ret_ty (nb, []) scope statements in
-      let node = Typed_ast.ForStmt(loc, init', cond', change', statements', (start_id, end_id)) in
+      let nb, body' = check_statements ret_ty (nb, []) scope (List.rev (Option.value body ~default:[])) in
+      let node = Typed_ast.ForStmt(loc, init', cond', change', body', (start_id, end_id)) in
       iter(nb, node :: acc) (LoopScope(label, start_id, end_id) :: scope) rest
     | ContinueStmt(loc, label) :: rest ->
       let (start_id, _) = get_loop_ids label scope in
@@ -367,9 +367,9 @@ let rec find_refs_stat bound stats
             (bound, find_refs_expr bound acc e)
           else (name :: bound, find_refs_expr bound acc e)
         | IfStmt(_, cond, branch1, branch2) ->
-          (bound, (find_refs_expr bound acc cond) @ (find_refs_stat bound branch1) @ (find_refs_stat bound branch2))
-        | ForStmt(_, init, cond, change, statements, _) ->
-          (bound, (find_refs_stat bound init) @ (find_refs_expr bound acc cond) @ (find_refs_stat bound change) @ (find_refs_stat bound statements))
+          (bound, (find_refs_expr bound acc cond) @ (find_refs_stat bound (Option.value branch1 ~default:[])) @ (find_refs_stat bound (Option.value branch2 ~default:[])))
+        | ForStmt(_, init, cond, change, body, _) ->
+          (bound, (find_refs_stat bound init) @ (find_refs_expr bound acc cond) @ (find_refs_stat bound change) @ (find_refs_stat bound (Option.value body ~default:[])))
         | ContinueStmt(_, _) -> (bound, acc)
         | BreakStmt(_, _) -> (bound, acc)
       ) (bound, []) stats

@@ -46,10 +46,10 @@ program:
 func:
   | FUNC name = IDENT;
     LPAREN params = separated_list(COMMA, IDENT); RPAREN
-    body = func_body
+    body = body
     { { name; params; body; loc = $startpos } }
 
-func_body:
+body:
   | LBRACE body = statements; RBRACE { Some(body) }
   | SEMI { None }
 
@@ -65,19 +65,19 @@ statement:
   | loop { $1 }
 
 loop:
-  | FOR LPAREN init=statements; cond=expr SEMI change=statements RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, init, cond, change, body, None) }
-  | label=IDENT COLON FOR LPAREN init=statements; cond=expr SEMI change=statements RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, init, cond, change, body, Some(label)) }
-  | WHILE LPAREN cond=expr; RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, [], cond, [], body, None) }
-  | label=IDENT COLON WHILE LPAREN cond=expr; RPAREN LBRACE body=statements; RBRACE { ForStmt($startpos, [], cond, [], body, Some(label)) }
+  | FOR LPAREN init=statements; cond=expr SEMI change=statements RPAREN body=body { ForStmt($startpos, init, cond, change, body, None) }
+  | label=IDENT COLON FOR LPAREN init=statements; cond=expr SEMI change=statements RPAREN body=body { ForStmt($startpos, init, cond, change, body, Some(label)) }
+  | WHILE cond=expr body=body { ForStmt($startpos, [], cond, [], body, None) }
+  | label=IDENT COLON WHILE LPAREN cond=expr; RPAREN body=body { ForStmt($startpos, [], cond, [], body, Some(label)) }
   | CONTINUE SEMI { ContinueStmt($startpos, None) }
   | CONTINUE label=IDENT SEMI { ContinueStmt($startpos, Some(label)) }
   | BREAK SEMI { BreakStmt($startpos, None) }
   | BREAK label=IDENT SEMI { BreakStmt($startpos, Some(label)) }
 
 if_statement:
-  | IF expr LBRACE statements RBRACE { IfStmt($startpos, $2, $4, []) }
-  | IF expr LBRACE statements RBRACE ELSE LBRACE statements RBRACE { IfStmt($startpos, $2, $4, $8) }
-  | IF expr LBRACE statements RBRACE ELSE if_statement { IfStmt($startpos, $2, $4, $7 :: []) }
+  | IF expr body=body { IfStmt($startpos, $2, body, None) }
+  | IF expr body1=body ELSE body2=body { IfStmt($startpos, $2, body1, body2) }
+  | IF expr body1=body ELSE if_statement { IfStmt($startpos, $2, body1, Some($5 :: [])) }
 
 expr:
   | unary_expr { $1 }

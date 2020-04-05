@@ -17,6 +17,30 @@ func main() {
 ''',
         '5\n'
     ),
+
+    'ifTest_NestedIfsOneEqualsTwo_NestsCorrectly': (
+        '''
+func print_int(x);
+
+
+func main() {
+  if 1==2 {
+    if 1==2 {
+      print_int(1);
+    } else {
+      print_int(2);
+    }
+  } else {
+    if 1==1 {
+      print_int(3);
+    } else {
+      print_int(4);
+    }
+  }
+}
+        ''',
+        '3\n'
+    ),
 }
 
 BINARY_FILE = '/tmp/__compilers_test_compiled'
@@ -26,7 +50,6 @@ def run_test(program_code, expected):
     with tempfile.NamedTemporaryFile() as code_file:
         with open(code_file.name, 'w+') as writeable_file:
             writeable_file.write(program_code)
-        print("Code File: " + code_file.name)
 
         try:
             try:
@@ -41,13 +64,12 @@ def run_test(program_code, expected):
             if got == expected:
                 return True
             else:
-                print("Expected: " + expected)
-                print("Got:      " + got)
+                print("Expected:\n" + expected)
+                print("Got:\n" + got)
                 return False
         finally:
             if os.path.exists(BINARY_FILE):
-                # os.remove(BINARY_FILE)
-                print("would have removed")
+                os.remove(BINARY_FILE)
 
 
 succeeded = []
